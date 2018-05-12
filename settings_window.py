@@ -1,6 +1,6 @@
 # import the GUI packages
 import sys
-import Tkinter as tk
+import tkinter as tk
 
 # import my classes
 import config

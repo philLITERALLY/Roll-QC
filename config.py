@@ -1,7 +1,7 @@
 version = "1.0"
 
 # AutomationHat
-automation = True
+automation = False
 
 # Camera Settings
 camWidth = 800
@@ -26,3 +26,9 @@ threshLimit = 128
 whiteThresh = 70
 alarmTime = 20
 minBlobCount = 6
+
+# GUI Settings
+imageMargins = 10
+screenWidth = 1920
+screenHeight = 1080
+headerText = 16
