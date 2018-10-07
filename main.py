@@ -88,39 +88,50 @@ class App(threading.Thread) :
                 pixelRatioWidth = 1 / config.screenWidth
                 pixelRatioHeight = 1 / config.screenHeight
 
-                # 3 Images Setup
+                # 2x2 Images Setup
                 totalMargins = config.imageMargins * 4
-                imageWidth = int((config.screenWidth - totalMargins) / 3)
-                cameraRatio = config.camWidth / config.camHeight
-                imageHeight = int(imageWidth / cameraRatio)
-                image = Image.open("./initialising.png").resize((imageWidth, imageHeight))
-
-                cameraScreen1 = ImageTk.PhotoImage(image)
-                self.root.cameraLabel1 = tk.Label(image=cameraScreen1)
-                self.root.cameraLabel1.place(relx=(pixelRatioWidth * config.imageMargins), rely=(pixelRatioHeight * config.imageMargins))
-
-                cameraScreen2 = ImageTk.PhotoImage(image)
-                self.root.cameraLabel2 = tk.Label(image=cameraScreen2)
-                self.root.cameraLabel2.place(relx=(pixelRatioWidth * (config.imageMargins * 2 + imageWidth)), rely=(pixelRatioHeight * config.imageMargins))
-
-                cameraScreen3 = ImageTk.PhotoImage(image)
-                self.root.cameraLabel3 = tk.Label(image=cameraScreen3)
-                self.root.cameraLabel3.place(relx=(pixelRatioWidth * (config.imageMargins * 3 + imageWidth * 2)), rely=(pixelRatioHeight * config.imageMargins))
+                imageWidth = int((config.screenWidth - totalMargins) / 2)
+                lblHeight = config.headerText + (config.imageMargins * 2)
+                btnHeight = config.headerText + (config.imageMargins * 12)
+                imageHeight = int((config.screenHeight - lblHeight - (config.imageMargins * 3) - btnHeight) / 2)
+                labelHeight = config.headerText + (config.imageMargins * 2)
 
                 # Header Setup
-                headerY = (config.imageMargins * 3) + imageHeight
+                headerY = config.imageMargins + imageHeight
                 self.root.headerLbl = self.make_label(
                         0,
                         headerY,
-                        config.headerText + (config.imageMargins * 2),
+                        lblHeight,
                         config.screenWidth,
                         text='LOW COST AUTOMATION',
                         font="Helvetica " + str(config.headerText) + " bold"
                 )
                 self.root.headerLbl.bind("<Button-1>", self.settings_menu)
 
+                # image setup
+                image = Image.open("./initialising.png").resize((imageWidth, imageHeight))
+                xLeftCamera = pixelRatioWidth * config.imageMargins
+                xRightCamera = pixelRatioWidth * (config.imageMargins * 2 + imageWidth)
+                yTopCamera = pixelRatioHeight * config.imageMargins
+                yBottomCamera = pixelRatioHeight * (imageHeight + config.imageMargins + labelHeight)
+
+                cameraScreen1 = ImageTk.PhotoImage(image)
+                self.root.cameraLabel1 = tk.Label(image=cameraScreen1)
+                self.root.cameraLabel1.place(relx=xLeftCamera, rely=yTopCamera)
+
+                cameraScreen2 = ImageTk.PhotoImage(image)
+                self.root.cameraLabel2 = tk.Label(image=cameraScreen2)
+                self.root.cameraLabel2.place(relx=xRightCamera, rely=yTopCamera)
+
+                cameraScreen3 = ImageTk.PhotoImage(image)
+                self.root.cameraLabel3 = tk.Label(image=cameraScreen3)
+                self.root.cameraLabel3.place(relx=xLeftCamera, rely=yBottomCamera)
+
+                cameraScreen4 = ImageTk.PhotoImage(image)
+                self.root.cameraLabel4 = tk.Label(image=cameraScreen4)
+                self.root.cameraLabel4.place(relx=xRightCamera, rely=yBottomCamera)
+
                 # Run Button Setup
-                btnHeight = config.headerText + (config.imageMargins * 12)
                 runY = config.screenHeight - btnHeight - config.imageMargins
                 self.root.runBtn = self.make_button(
                         config.imageMargins,

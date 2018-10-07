@@ -5,7 +5,7 @@ automation = False
 
 # Camera Settings
 camWidth = 800
-camHeight = 480
+camHeight = 300
 camFrameRate = 90
 shutterSpeed = 1800
 
