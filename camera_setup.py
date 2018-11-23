@@ -1,30 +1,20 @@
-# import packages
-from picamera.array import PiRGBArray
-from picamera import PiCamera
-import time
+# External Libraries
+import cv2      # OpenCV
+import logging  # Logging
 
-# import my modules
+# My Modules
 import config
+import info_logger
 
+logging.basicConfig(filename='logging.log', level=logging.DEBUG)
+
+# Initialise and apply camera settings
 def main():
-    # init camera
-    camera = PiCamera()
-    # set camera resolution to config value
-    camera.resolution = (config.camWidth, config.camHeight)
-    # set camera framerate to config value
-    camera.framerate = config.camFrameRate
-    # set camera to black and white
-    camera.color_effects = (128, 128)
-    # set shutter_speed to config value
-    camera.shutter_speed = config.shutterSpeed
-    # camera.brightness = 90
+    capture = cv2.VideoCapture(0)
+    capture.set(3, config.camWidth)
+    capture.set(4, config.camHeight)
+    capture.set(5, config.camFPS)
 
-    # init capture
-    rawCap = PiRGBArray(camera, size = (config.camWidth, config.camHeight))
+    info_logger.camera_settings(capture)
 
-    # initiate camera stream
-    stream = camera.capture_continuous(rawCap, format="bgr",
-	   use_video_port=True)
-
-    # return camera stream and init cap
-    return stream, rawCap, camera
+    return capture

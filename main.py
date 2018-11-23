@@ -1,167 +1,57 @@
-# import packages
-# check RAM usage // free -m -s 0.1 //
-import sys
-import time
-from datetime import datetime
-from collections import Counter
+import cv2
+import numpy as np
 
-# import the GUI packages
-import tkinter as tk
-import threading
-from PIL import Image
-from PIL import ImageTk
+cap = cv2.VideoCapture(0)
+cap.set(3,1920)
+cap.set(4,1080)
+cap.set(5,30)
 
-# import my classes
-import config
-import settings_window
+# Define the codec and create VideoWriter object
+fourcc = cv2.VideoWriter_fourcc(*'DIVX')
+out = cv2.VideoWriter('output.avi',cv2.VideoWriter_fourcc('D','I','V','X'), 10.0, (1920,200))
+out2 = cv2.VideoWriter('output2.avi',cv2.VideoWriter_fourcc('D','I','V','X'), 10.0, (1920,200), False)
 
-class App(threading.Thread) :
-        def __init__(self) :
-                threading.Thread.__init__(self)
-                self.start()
-        def settings_menu(self, other) :
-                window = settings_window.main(self.root)
-        def upCrop(self) :
-                if config.cropHeightStart + config.cropHeight >= config.camHeight :
-                        self.root.cropUpBtn.configure(text="MAX")
-                else :
-                        config.cropHeightStart += 10
-                        config.cropHeightEnd = config.cropHeightStart + config.cropHeight
+while(1):
 
-                if config.cropHeightStart != 0 :
-                        self.root.cropDownBtn.configure(text=u"\u2B07")
-        def downCrop(self) :
-                if config.cropHeightStart - 10 <= 0 :
-                        self.root.cropDownBtn.configure(text="MAX")
-                else :
-                        config.cropHeightStart -= 10
-                        config.cropHeightEnd = config.cropHeightStart + config.cropHeight
+    # Take each frame
+    _, frame = cap.read()
+ 
+    cropped = frame[450:650, 0:1920]
+    gray = cv2.cvtColor(cropped, cv2.COLOR_BGR2GRAY)
+    retval, threshold = cv2.threshold(gray, 200, 255, 0)
+    drawImg = cropped
 
-                if config.cropHeightStart + config.cropHeight != config.camHeight :
-                        self.root.cropUpBtn.configure(text=u"\u2B06")
-        def read(self) :
-                global readMode
-                if (self.root.runBtn.cget('text') == "RUN") :
-                        # Set App to read mode
-                        readMode = True
+     # run opencv find contours, only external boxes
+    image, contours, hierarchy = cv2.findContours(threshold, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    contours = [cnt for cnt in contours if cv2.contourArea(cnt) > 2000]
 
-                        # Change runBtn to stop colour
-                        self.root.runBtn.configure(
-                                bg="red",
-                                activebackground="red",
-                                text="PAUSE"
-                        )
+    #for each contour draw a bounding box and order number
+    for cnt in contours:
+        x,y,w,h = cv2.boundingRect(cnt)
+        cv2.rectangle(drawImg, (x,y), (x+w,y+h), (0,255,0),2)  
+    #         x,y,w,h = cv2.boundingRect(cnt)
+    #         print(cv2.boundingRect(cnt))
+    #         cv2.rectangle(drawImg, (x,y), (x+w,y+h), (0,255,0),2)
 
-                elif (self.root.runBtn.cget('text') == "PAUSE") :
-                        # Take App out of read mode
-                        readMode = False
+    # cv2.imshow('frame',frame)
+    # cv2.imshow('gray',gray)
+    # cv2.imshow('threshold',threshold)
+    cv2.imshow('threshold',threshold)
+    cv2.imshow('drawImg',drawImg)
+    # cv2.imshow('blur',blur)
 
-                        # Change runBtn to default
-                        self.root.runBtn.configure(
-                                bg="green",
-                                activebackground="green",
-                                text="RUN"
-                        )
-        def make_label(self, x, y, h, w, *args, **kwargs):
-                f = tk.Frame(self.root, height=h, width=w)
-                f.pack_propagate(0) # don't shrink
-                f.place(x=x, y=y)
-                label = tk.Label(f, *args, **kwargs)
-                label.pack(fill=tk.BOTH, expand=1)
-                return label
-        def make_button(self, x, y, h, w, *args, **kwargs):
-                f = tk.Frame(self.root, height=h, width=w)
-                f.pack_propagate(0) # don't shrink
-                f.place(x=x, y=y)
-                button = tk.Button(f, *args, **kwargs)
-                button.pack(fill=tk.BOTH, expand=1)
-                return button
-        def run(self) :
-                self.root = tk.Tk()
-                self.root.attributes("-fullscreen", True)
-                self.root.updateConfig = False
-                self.root.shutDown = False
+    # # write the flipped frame
+    out.write(drawImg)
+    out2.write(threshold)
 
-                # Screen size and pixel ratios
-                config.screenWidth = self.root.winfo_screenwidth()
-                config.screenHeight = self.root.winfo_screenheight()
-                pixelRatioWidth = 1 / config.screenWidth
-                pixelRatioHeight = 1 / config.screenHeight
+    k = cv2.waitKey(5) & 0xFF
+    if k == 27:
+        # cv2.imwrite( "cropped.jpg", threshold )
+        # cv2.imwrite( "blob.jpg", drawImg )
+        break
 
-                # 2x2 Images Setup
-                totalMargins = config.imageMargins * 4
-                imageWidth = int((config.screenWidth - totalMargins) / 2)
-                lblHeight = config.headerText + (config.imageMargins * 2)
-                btnHeight = config.headerText + (config.imageMargins * 12)
-                imageHeight = int((config.screenHeight - lblHeight - (config.imageMargins * 3) - btnHeight) / 2)
-                labelHeight = config.headerText + (config.imageMargins * 2)
-
-                # Header Setup
-                headerY = config.imageMargins + imageHeight
-                self.root.headerLbl = self.make_label(
-                        0,
-                        headerY,
-                        lblHeight,
-                        config.screenWidth,
-                        text='LOW COST AUTOMATION',
-                        font="Helvetica " + str(config.headerText) + " bold"
-                )
-                self.root.headerLbl.bind("<Button-1>", self.settings_menu)
-
-                # image setup
-                image = Image.open("./initialising.png").resize((imageWidth, imageHeight))
-                xLeftCamera = pixelRatioWidth * config.imageMargins
-                xRightCamera = pixelRatioWidth * (config.imageMargins * 2 + imageWidth)
-                yTopCamera = pixelRatioHeight * config.imageMargins
-                yBottomCamera = pixelRatioHeight * (imageHeight + config.imageMargins + labelHeight)
-
-                cameraScreen1 = ImageTk.PhotoImage(image)
-                self.root.cameraLabel1 = tk.Label(image=cameraScreen1)
-                self.root.cameraLabel1.place(relx=xLeftCamera, rely=yTopCamera)
-
-                cameraScreen2 = ImageTk.PhotoImage(image)
-                self.root.cameraLabel2 = tk.Label(image=cameraScreen2)
-                self.root.cameraLabel2.place(relx=xRightCamera, rely=yTopCamera)
-
-                cameraScreen3 = ImageTk.PhotoImage(image)
-                self.root.cameraLabel3 = tk.Label(image=cameraScreen3)
-                self.root.cameraLabel3.place(relx=xLeftCamera, rely=yBottomCamera)
-
-                cameraScreen4 = ImageTk.PhotoImage(image)
-                self.root.cameraLabel4 = tk.Label(image=cameraScreen4)
-                self.root.cameraLabel4.place(relx=xRightCamera, rely=yBottomCamera)
-
-                # Run Button Setup
-                runY = config.screenHeight - btnHeight - config.imageMargins
-                self.root.runBtn = self.make_button(
-                        config.imageMargins,
-                        runY,
-                        btnHeight,
-                        config.screenWidth - (config.imageMargins * 2),
-                        text='RUN',
-                        font="Helvetica " + str(config.headerText) + " bold",
-                        command=self.read,
-                        bg="green",
-                        activebackground="green"
-                )
-
-                self.root.title("LOW COST AUTOMATION")
-                self.root.mainloop()
-
-app = App()
-
-# try/except statement is a pretty ugly hack to get around
-# a RunTime error that Tkinter throws due to threading
-while True:
-        try:
-                if hasattr(app, 'root') and hasattr(app.root, 'shutDown') and app.root.shutDown:
-                        try:
-                                app.root.quit()
-                                sys.exit()
-                        except Exception as ex:
-                                print('Shutdown error')
-                                print(ex)
-
-        except Exception as e:
-                print('Caught an error')
-                print(e)
+# Release everything if job is finished
+cap.release()
+out.release()
+out2.release()
+cv2.destroyAllWindows()
